@@ -121,7 +121,8 @@ class Customer(models.Model):
 
 from django.db.models.signals import post_save
 
-def create_customer(sender, instance, created, **kwargs):
-    if created:
+def create_customer(sender, instance, created, raw=False, **kwargs):
+    if created and not raw:
         Customer.objects.create(user=instance)
-post_save.connect(create_customer, sender=User)
+    post_save.connect(create_customer, sender=User)
+    return user

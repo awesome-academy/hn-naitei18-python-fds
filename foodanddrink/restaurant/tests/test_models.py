@@ -1,5 +1,7 @@
 from django.test import TestCase
-from ..models import Order, OrderDetail, User, Product, Category, Customer
+from django.core.exceptions import ValidationError
+from ..models import Order, OrderDetail, User, Product, Category, Customer, Comment, Review
+
 
 class OrderModelTest(TestCase):
     @classmethod
@@ -34,7 +36,6 @@ class OrderDetailModelTest(TestCase):
         max_digits = test_orderdetail._meta.get_field('price').max_digits
         print(max_digits)
         self.assertEquals(max_digits, 4)
-
 
 class ProductModelTest(TestCase):
   @classmethod
@@ -89,3 +90,65 @@ class CustomerModelTest(TestCase):
     customer = Customer.objects.get(id=1)
     expected_object_name = f'{customer.user.username}'
     self.assertEquals(expected_object_name, str(customer))
+
+class CategoryModelsTest(TestCase):
+  @classmethod
+  def setUpTestData(cls):
+    """Set up non-modified objects used by all test methods."""
+    Category.objects.create(name = 'Drinks')
+
+  def test_name_label(self):
+    category = Category.objects.get(id = 1)
+    field_label =Category._meta.get_field('name').verbose_name
+    self.assertEquals(field_label,'name')
+
+  def test_name_max_length(self):
+    category = Category.objects.get(id = 1)
+    max_length = category._meta.get_field('name').max_length
+    self.assertEquals(max_length,200)
+
+class ReviewModelsTest(TestCase):
+  @classmethod
+  def setUpTestData(cls):
+    user = User.objects.create(username = 'khach', password ='huutuan0404', is_superuser = 0)
+    customer = Customer.objects.create(user = user)
+    category = Category.objects.create(name = 'Drinks')
+    product = Product.objects.create(name = 'tra sua', category = category, price = 23.00, quantity = 10, vote = 3.0, description = 'nuoc duoc san xuat o vn')
+    Review.objects.create(user = customer, product = product,vote = 3, content = 'Nuoc nay rat ngon va bo duong')
+
+  def test_content_label(self):
+    review = Review.objects.get(id = 1)
+    field_label =review._meta.get_field('content').verbose_name
+    self.assertEquals(field_label,'content')
+
+  def test_content_max_length(self):
+    review = Review.objects.get(id = 1)
+    max_length = review._meta.get_field('content').max_length
+    self.assertEquals(max_length,1000)
+
+  def test_vote_value(self):
+    review = Review.objects.get(id = 1)
+    if int(review.vote) > 5:
+        raise ValidationError(_('Review rating beyond 5'))
+    elif int(review.vote) <0:
+        raise ValidationError(_('Review rating under 0'))
+
+class CommentModelsTest(TestCase):
+  @classmethod
+  def setUpTestData(cls):
+    user = User.objects.create(username = 'khach', password ='huutuan0404')
+    customer = Customer.objects.create(user = user)
+    category = Category.objects.create(name = 'Drinks')
+    product = Product.objects.create(name = 'tra sua', category = category, price = 23.00, quantity = 10, vote = 3.0, description = 'nuoc duoc san xuat o vn')
+    review = Review.objects.create(user = customer, product = product,vote = 3, content = 'Nuoc nay rat ngon va bo duong')
+    Comment.objects.create(user = customer, review = review, content = 'cam on ban da ung ho' )
+
+  def test_content_label(self):
+    comment = Comment.objects.get(id = 1)
+    field_label =comment._meta.get_field('content').verbose_name
+    self.assertEquals(field_label,'content')
+
+  def test_content_max_length(self):
+    comment = Comment.objects.get(id = 1)
+    max_length = comment._meta.get_field('content').max_length
+
